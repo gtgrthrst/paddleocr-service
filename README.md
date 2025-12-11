@@ -26,17 +26,17 @@
 
 ```bash
 # 使用 curl
-curl -fsSL https://raw.githubusercontent.com/YOUR_USERNAME/paddleocr-service/main/quick-install.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/gtgrthrst/paddleocr-service/main/quick-install.sh | sudo bash
 
 # 或使用 wget
-wget -qO- https://raw.githubusercontent.com/YOUR_USERNAME/paddleocr-service/main/quick-install.sh | sudo bash
+wget -qO- https://raw.githubusercontent.com/gtgrthrst/paddleocr-service/main/quick-install.sh | sudo bash
 ```
 
 ### 方法二: 從 GitHub 克隆安裝
 
 ```bash
 # 1. 克隆倉庫
-git clone https://github.com/YOUR_USERNAME/paddleocr-service.git
+git clone https://github.com/gtgrthrst/paddleocr-service.git
 cd paddleocr-service
 
 # 2. 執行安裝腳本
@@ -48,11 +48,11 @@ sudo ./install.sh
 
 ```bash
 # 下載安裝腳本
-curl -O https://raw.githubusercontent.com/YOUR_USERNAME/paddleocr-service/main/install.sh
+curl -O https://raw.githubusercontent.com/gtgrthrst/paddleocr-service/main/install.sh
 chmod +x install.sh
 
 # 從 GitHub 安裝 (可指定倉庫和分支)
-sudo ./install.sh --github --repo YOUR_USERNAME/paddleocr-service --branch main
+sudo ./install.sh --github --repo gtgrthrst/paddleocr-service --branch main
 ```
 
 ### 方法四: 手動安裝
@@ -65,7 +65,7 @@ sudo apt install -y python3 python3-pip python3-venv \
     libxrender1 poppler-utils git
 
 # 2. 克隆專案
-git clone https://github.com/YOUR_USERNAME/paddleocr-service.git
+git clone https://github.com/gtgrthrst/paddleocr-service.git
 cd paddleocr-service
 
 # 3. 創建虛擬環境
@@ -86,7 +86,7 @@ sudo ./install.sh [選項]
 
 選項:
   --github          從 GitHub 克隆安裝
-  --repo REPO       指定 GitHub 倉庫 (預設: YOUR_USERNAME/paddleocr-service)
+  --repo REPO       指定 GitHub 倉庫 (預設: gtgrthrst/paddleocr-service)
   --branch BRANCH   指定分支 (預設: main)
   --port PORT       指定服務埠號 (預設: 8000)
   -h, --help        顯示說明
@@ -295,8 +295,8 @@ git init
 git add .
 git commit -m "Initial commit: PaddleOCR Web Service"
 
-# 添加遠端倉庫 (替換 YOUR_USERNAME)
-git remote add origin https://github.com/YOUR_USERNAME/paddleocr-service.git
+# 添加遠端倉庫 (替換 gtgrthrst)
+git remote add origin https://github.com/gtgrthrst/paddleocr-service.git
 
 # 推送到 GitHub
 git branch -M main
@@ -305,7 +305,7 @@ git push -u origin main
 
 ### 3. 更新安裝腳本中的倉庫位址
 
-上傳後，記得修改以下檔案中的 `YOUR_USERNAME`:
+上傳後，記得修改以下檔案中的 `gtgrthrst`:
 
 - `install.sh` - 第 35 行的 `GITHUB_REPO`
 - `quick-install.sh` - 第 20 行的 `GITHUB_REPO`
@@ -316,5 +316,5 @@ git push -u origin main
 上傳完成後，就可以在任何 Ubuntu CT 中使用一鍵安裝:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/YOUR_USERNAME/paddleocr-service/main/quick-install.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/gtgrthrst/paddleocr-service/main/quick-install.sh | sudo bash
 ```
