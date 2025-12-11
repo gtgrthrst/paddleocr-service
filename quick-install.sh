@@ -22,8 +22,8 @@ info() { echo -e "${BLUE}[INFO]${NC} $1"; }
 success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
 error() { echo -e "${RED}[ERROR]${NC} $1"; exit 1; }
 
-# 設定變數 (請修改為你的 GitHub 倉庫)
-GITHUB_REPO="${GITHUB_REPO:-YOUR_USERNAME/paddleocr-service}"
+# 設定變數
+GITHUB_REPO="${GITHUB_REPO:-gtgrthrst/paddleocr-service}"
 GITHUB_BRANCH="${GITHUB_BRANCH:-main}"
 INSTALL_DIR="/opt/paddleocr-service"
 TEMP_DIR="/tmp/paddleocr-install-$$"
