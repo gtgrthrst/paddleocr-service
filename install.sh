@@ -78,7 +78,7 @@ install_system_deps() {
         python3-pip \
         python3-venv \
         python3-dev \
-        libgl1-mesa-glx \
+        libgl1 \
         libglib2.0-0 \
         libsm6 \
         libxext6 \
