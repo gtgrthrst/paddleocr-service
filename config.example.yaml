@@ -1,0 +1,41 @@
+# PaddleOCR Service 配置檔案
+# ============================
+# 複製此檔案為 config.yaml 並修改設定
+
+# 服務設定
+server:
+  host: "0.0.0.0"
+  port: 8000
+  workers: 1  # CT 環境建議設為 1
+
+# OCR 引擎設定
+ocr:
+  lang: "ch"           # 語言: ch(中英), en, japan, korean, etc.
+  use_angle_cls: true  # 文字方向分類
+  use_gpu: false       # CT 環境通常無 GPU
+  
+  # 模型設定 (使用預設即可)
+  # det_model_dir: null
+  # rec_model_dir: null
+  # cls_model_dir: null
+
+# 上傳設定
+upload:
+  max_size_mb: 20      # 最大檔案大小 (MB)
+  allowed_types:       # 允許的檔案類型
+    - ".png"
+    - ".jpg"
+    - ".jpeg"
+    - ".bmp"
+    - ".gif"
+    - ".webp"
+    - ".tiff"
+    - ".tif"
+    - ".pdf"
+
+# 日誌設定
+logging:
+  level: "INFO"        # DEBUG, INFO, WARNING, ERROR
+  file: "logs/app.log"
+  max_size_mb: 10
+  backup_count: 5

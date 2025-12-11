@@ -1,0 +1,20 @@
+# PaddleOCR Web Service Dependencies
+# ===================================
+
+# Web Framework
+fastapi>=0.100.0
+uvicorn[standard]>=0.23.0
+python-multipart>=0.0.6
+
+# PaddleOCR (基本 OCR 功能)
+paddleocr>=3.0.0
+
+# 可選: 完整文檔解析功能 (PP-StructureV3)
+# paddleocr[all]>=3.0.0
+
+# PDF 處理 (若需要處理 PDF)
+pdf2image>=1.16.0
+
+# 其他工具
+Jinja2>=3.1.0
+aiofiles>=23.0.0
