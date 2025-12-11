@@ -4,9 +4,9 @@
 # 從 GitHub 下載並安裝
 # 
 # 使用方式:
-# curl -fsSL https://raw.githubusercontent.com/YOUR_USERNAME/paddleocr-service/main/quick-install.sh | sudo bash
+# curl -fsSL https://raw.githubusercontent.com/gtgrthrst/paddleocr-service/main/quick-install.sh | sudo bash
 # 或
-# wget -qO- https://raw.githubusercontent.com/YOUR_USERNAME/paddleocr-service/main/quick-install.sh | sudo bash
+# wget -qO- https://raw.githubusercontent.com/gtgrthrst/paddleocr-service/main/quick-install.sh | sudo bash
 # ============================================
 
 set -e
