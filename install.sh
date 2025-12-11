@@ -35,8 +35,8 @@ VENV_DIR="$INSTALL_DIR/venv"
 SERVICE_PORT=${PORT:-8000}
 PYTHON_VERSION="python3"
 
-# GitHub 設定 (請修改為你的 GitHub 用戶名和倉庫名)
-GITHUB_REPO="${GITHUB_REPO:-YOUR_USERNAME/paddleocr-service}"
+# GitHub 設定
+GITHUB_REPO="${GITHUB_REPO:-gtgrthrst/paddleocr-service}"
 GITHUB_BRANCH="${GITHUB_BRANCH:-main}"
 
 # 顯示標題
