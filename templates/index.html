@@ -647,10 +647,27 @@
                                 <div class="stat-label">處理時間</div>
                             </div>
                         </div>
-                        <button class="copy-btn" id="copyBtn">📋 複製文字</button>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button class="copy-btn" id="copyBtn">📋 複製文字</button>
+                            <button class="copy-btn" id="toTableBtn">📊 轉為表格</button>
+                        </div>
                     </div>
                     <div class="result-content">
                         <div class="result-text" id="resultText"></div>
+                    </div>
+                    
+                    <!-- 表格結果區 -->
+                    <div class="table-result" id="tableResult" style="display: none; margin-top: 1rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                            <span style="color: var(--accent-green); font-weight: 500;">📊 表格轉換結果</span>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <button class="copy-btn" id="copyCSV">📄 複製 CSV</button>
+                                <button class="copy-btn" id="downloadCSV">⬇️ 下載 CSV</button>
+                            </div>
+                        </div>
+                        <div class="result-content" style="max-height: 300px;">
+                            <div id="markdownTable" style="overflow-x: auto;"></div>
+                        </div>
                     </div>
                 </div>
 
@@ -935,6 +952,129 @@ console.log(result.full_text);</code>
                     copyBtn.classList.remove('copied');
                 }, 2000);
             }
+        });
+
+        // 表格轉換功能
+        const toTableBtn = document.getElementById('toTableBtn');
+        const tableResult = document.getElementById('tableResult');
+        const markdownTable = document.getElementById('markdownTable');
+        const copyCSV = document.getElementById('copyCSV');
+        const downloadCSV = document.getElementById('downloadCSV');
+        let currentCSV = '';
+
+        toTableBtn.addEventListener('click', async () => {
+            const text = resultText.textContent;
+            if (!text || text === '(無法辨識出文字)') {
+                showError('沒有可轉換的文字');
+                return;
+            }
+
+            toTableBtn.textContent = '⏳ 轉換中...';
+            toTableBtn.disabled = true;
+
+            try {
+                const formData = new FormData();
+                formData.append('text', text);
+                formData.append('delimiter', 'auto');
+
+                const response = await fetch('/api/convert/table', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || '轉換失敗');
+                }
+
+                // 顯示結果
+                currentCSV = result.csv_content;
+                
+                // 將 Markdown 表格轉為 HTML 表格顯示
+                const htmlTable = markdownToHtmlTable(result.markdown_table);
+                markdownTable.innerHTML = htmlTable;
+                tableResult.style.display = 'block';
+
+                toTableBtn.textContent = '✓ 已轉換';
+                setTimeout(() => {
+                    toTableBtn.textContent = '📊 轉為表格';
+                }, 2000);
+
+            } catch (error) {
+                showError(error.message);
+                toTableBtn.textContent = '📊 轉為表格';
+            } finally {
+                toTableBtn.disabled = false;
+            }
+        });
+
+        // Markdown 表格轉 HTML
+        function markdownToHtmlTable(md) {
+            if (!md) return '<p>無法轉換為表格</p>';
+            
+            const lines = md.trim().split('\n');
+            if (lines.length < 2) return '<p>資料不足以形成表格</p>';
+            
+            let html = '<table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">';
+            
+            lines.forEach((line, index) => {
+                if (line.includes('---')) return; // 跳過分隔線
+                
+                const cells = line.split('|').filter(c => c.trim());
+                const tag = index === 0 ? 'th' : 'td';
+                const bgColor = index === 0 ? 'var(--bg-hover)' : 'transparent';
+                
+                html += '<tr>';
+                cells.forEach(cell => {
+                    html += `<${tag} style="border: 1px solid var(--border-color); padding: 0.5rem; background: ${bgColor};">${cell.trim()}</${tag}>`;
+                });
+                html += '</tr>';
+            });
+            
+            html += '</table>';
+            return html;
+        }
+
+        // 複製 CSV
+        copyCSV.addEventListener('click', async () => {
+            if (!currentCSV) return;
+            try {
+                await navigator.clipboard.writeText(currentCSV);
+                copyCSV.textContent = '✓ 已複製';
+                copyCSV.classList.add('copied');
+                setTimeout(() => {
+                    copyCSV.textContent = '📄 複製 CSV';
+                    copyCSV.classList.remove('copied');
+                }, 2000);
+            } catch (err) {
+                const textarea = document.createElement('textarea');
+                textarea.value = currentCSV;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                copyCSV.textContent = '✓ 已複製';
+                copyCSV.classList.add('copied');
+                setTimeout(() => {
+                    copyCSV.textContent = '📄 複製 CSV';
+                    copyCSV.classList.remove('copied');
+                }, 2000);
+            }
+        });
+
+        // 下載 CSV
+        downloadCSV.addEventListener('click', () => {
+            if (!currentCSV) return;
+            const blob = new Blob(['\ufeff' + currentCSV], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'ocr_table_' + new Date().toISOString().slice(0,10) + '.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         });
 
         // 標籤頁切換
