@@ -73,12 +73,9 @@ def get_ocr_engine():
         logger.info("初始化 PaddleOCR 引擎...")
         from paddleocr import PaddleOCR
         _ocr_engine = PaddleOCR(
-            use_angle_cls=True,
-            lang='ch',  # 支援中英文
-            use_gpu=False,  # CT 環境通常無 GPU
-            show_log=False,
             use_doc_orientation_classify=False,
             use_doc_unwarping=False,
+            use_textline_orientation=False,
         )
         logger.info("PaddleOCR 引擎初始化完成")
     return _ocr_engine
@@ -150,19 +147,70 @@ def process_image_ocr(image_path: str) -> List[Dict[str, Any]]:
     result = ocr.predict(input=image_path)
     
     ocr_results = []
-    for res in result:
-        if hasattr(res, 'rec_texts') and res.rec_texts:
-            for i, (text, score, bbox) in enumerate(zip(
-                res.rec_texts, 
-                res.rec_scores, 
-                res.dt_polys if hasattr(res, 'dt_polys') else [[]]
-            )):
-                ocr_results.append({
-                    'text': text,
-                    'confidence': float(score),
-                    'bbox': bbox.tolist() if hasattr(bbox, 'tolist') else bbox
-                })
     
+    # PaddleOCR 3.x 返回格式處理
+    for res in result:
+        # 調試：記錄返回的屬性
+        logger.info(f"OCR result type: {type(res)}, attributes: {dir(res)}")
+        
+        # 嘗試不同的屬性名稱 (PaddleOCR 3.x)
+        texts = None
+        scores = None
+        boxes = None
+        
+        # 方式 1: rec_texts (PaddleOCR 3.x)
+        if hasattr(res, 'rec_texts'):
+            texts = res.rec_texts
+            scores = getattr(res, 'rec_scores', [1.0] * len(texts))
+            boxes = getattr(res, 'dt_polys', [[]] * len(texts))
+        
+        # 方式 2: 直接訪問 text 屬性
+        elif hasattr(res, 'text'):
+            texts = [res.text] if isinstance(res.text, str) else res.text
+            scores = [getattr(res, 'score', 1.0)]
+            boxes = [getattr(res, 'box', [])]
+        
+        # 方式 3: 字典格式
+        elif isinstance(res, dict):
+            if 'rec_texts' in res:
+                texts = res['rec_texts']
+                scores = res.get('rec_scores', [1.0] * len(texts))
+                boxes = res.get('dt_polys', [[]] * len(texts))
+            elif 'text' in res:
+                texts = [res['text']]
+                scores = [res.get('score', 1.0)]
+                boxes = [res.get('box', [])]
+        
+        # 方式 4: 嘗試 json() 方法
+        elif hasattr(res, 'json'):
+            try:
+                data = res.json()
+                logger.info(f"OCR result json: {data}")
+            except:
+                pass
+        
+        # 方式 5: 嘗試 __dict__
+        if texts is None and hasattr(res, '__dict__'):
+            logger.info(f"OCR result __dict__: {res.__dict__}")
+            d = res.__dict__
+            if 'rec_texts' in d:
+                texts = d['rec_texts']
+                scores = d.get('rec_scores', [1.0] * len(texts))
+                boxes = d.get('dt_polys', [[]] * len(texts))
+        
+        # 處理找到的結果
+        if texts:
+            for i, text in enumerate(texts):
+                if text:  # 過濾空文字
+                    score = scores[i] if i < len(scores) else 1.0
+                    bbox = boxes[i] if i < len(boxes) else []
+                    ocr_results.append({
+                        'text': str(text),
+                        'confidence': float(score) if score else 1.0,
+                        'bbox': bbox.tolist() if hasattr(bbox, 'tolist') else (list(bbox) if bbox else [])
+                    })
+    
+    logger.info(f"OCR 辨識完成，共 {len(ocr_results)} 個結果")
     return ocr_results
 
 def process_pdf_ocr(pdf_path: str) -> List[Dict[str, Any]]:
