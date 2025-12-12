@@ -128,6 +128,14 @@ class ErrorResponse(BaseModel):
     error: str
     detail: Optional[str] = None
 
+class TableResponse(BaseModel):
+    """表格轉換回應"""
+    success: bool
+    csv_content: str
+    markdown_table: str
+    row_count: int
+    col_count: int
+
 # ============== Helper Functions ==============
 
 def validate_file(filename: str) -> tuple[bool, str]:
@@ -393,6 +401,162 @@ async def ocr_batch(
         "results": results,
         "timestamp": datetime.now().isoformat()
     }
+
+@app.post("/api/ocr/table")
+async def ocr_to_table(
+    file: UploadFile = File(..., description="上傳圖片或 PDF 檔案"),
+):
+    """
+    OCR 辨識並轉換為表格格式
+    
+    自動偵測表格結構，回傳 CSV 和 Markdown 表格格式
+    """
+    start_time = datetime.now()
+    
+    # 驗證檔案
+    valid, result = validate_file(file.filename)
+    if not valid:
+        raise HTTPException(status_code=400, detail=result)
+    
+    file_ext = result
+    file_id = str(uuid.uuid4())
+    temp_path = UPLOAD_DIR / f"{file_id}{file_ext}"
+    
+    try:
+        content = await file.read()
+        with open(temp_path, 'wb') as f:
+            f.write(content)
+        
+        # 執行 OCR
+        if file_ext in ALLOWED_PDF_EXTENSIONS:
+            ocr_results = process_pdf_ocr(str(temp_path))
+        else:
+            ocr_results = process_image_ocr(str(temp_path))
+        
+        # 轉換為表格
+        csv_content, markdown_table, rows, cols = convert_to_table(ocr_results)
+        
+        return TableResponse(
+            success=True,
+            csv_content=csv_content,
+            markdown_table=markdown_table,
+            row_count=rows,
+            col_count=cols
+        )
+        
+    except Exception as e:
+        logger.error(f"表格轉換錯誤: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"表格轉換失敗: {str(e)}")
+    finally:
+        if temp_path.exists():
+            temp_path.unlink()
+
+@app.post("/api/convert/table")
+async def convert_text_to_table(
+    text: str = Form(..., description="OCR 辨識的文字內容"),
+    delimiter: str = Form(default="auto", description="分隔符: auto, tab, space, comma")
+):
+    """
+    將 OCR 文字轉換為表格格式
+    
+    可指定分隔符或自動偵測
+    """
+    try:
+        # 建立假的 OCR 結果
+        lines = text.strip().split('\n')
+        ocr_results = [{'text': line, 'confidence': 1.0, 'bbox': []} for line in lines if line.strip()]
+        
+        csv_content, markdown_table, rows, cols = convert_to_table(ocr_results, delimiter)
+        
+        return TableResponse(
+            success=True,
+            csv_content=csv_content,
+            markdown_table=markdown_table,
+            row_count=rows,
+            col_count=cols
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"轉換失敗: {str(e)}")
+
+def convert_to_table(ocr_results: List[Dict], delimiter: str = "auto") -> tuple:
+    """將 OCR 結果轉換為表格"""
+    import csv
+    import io
+    import re
+    
+    if not ocr_results:
+        return "", "", 0, 0
+    
+    # 收集所有文字行
+    lines = [r['text'] for r in ocr_results if r.get('text')]
+    
+    if not lines:
+        return "", "", 0, 0
+    
+    # 自動偵測分隔符
+    if delimiter == "auto":
+        # 統計各種分隔符出現次數
+        tab_count = sum(line.count('\t') for line in lines)
+        comma_count = sum(line.count(',') for line in lines)
+        space_count = sum(len(re.findall(r'\s{2,}', line)) for line in lines)
+        
+        if tab_count > len(lines) * 0.5:
+            delimiter = '\t'
+        elif comma_count > len(lines) * 0.5:
+            delimiter = ','
+        elif space_count > len(lines) * 0.3:
+            delimiter = 'space'
+        else:
+            # 嘗試用多空格分割
+            delimiter = 'space'
+    
+    # 解析表格
+    table_data = []
+    max_cols = 0
+    
+    for line in lines:
+        if delimiter == 'space':
+            # 用2個以上空格分割
+            cells = re.split(r'\s{2,}', line.strip())
+        elif delimiter == 'tab':
+            cells = line.split('\t')
+        elif delimiter == 'comma':
+            cells = line.split(',')
+        else:
+            cells = line.split(delimiter)
+        
+        cells = [c.strip() for c in cells if c.strip()]
+        if cells:
+            table_data.append(cells)
+            max_cols = max(max_cols, len(cells))
+    
+    if not table_data:
+        return "", "", 0, 0
+    
+    # 補齊列數
+    for row in table_data:
+        while len(row) < max_cols:
+            row.append("")
+    
+    # 生成 CSV
+    csv_output = io.StringIO()
+    writer = csv.writer(csv_output)
+    writer.writerows(table_data)
+    csv_content = csv_output.getvalue()
+    
+    # 生成 Markdown 表格
+    md_lines = []
+    if table_data:
+        # 表頭
+        md_lines.append("| " + " | ".join(table_data[0]) + " |")
+        md_lines.append("| " + " | ".join(["---"] * max_cols) + " |")
+        # 資料行
+        for row in table_data[1:]:
+            md_lines.append("| " + " | ".join(row) + " |")
+    
+    markdown_table = "\n".join(md_lines)
+    
+    return csv_content, markdown_table, len(table_data), max_cols
 
 @app.get("/api/formats")
 async def get_supported_formats():
